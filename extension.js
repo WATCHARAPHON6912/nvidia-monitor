@@ -29,7 +29,7 @@ class NvidiaMonitorTreeDataProvider {
             return rootItem;
         }  else if (element.label.startsWith(`${this.currentData.device || 'N/A'}`)) {
             return [
-                new NvidiaMonitorTreeItem(`Usage: ${this.currentData.usage || 'N/A'} %`, vscode.TreeItemCollapsibleState.None),
+                new NvidiaMonitorTreeItem(`GPU: ${this.currentData.usage || 'N/A'} %`, vscode.TreeItemCollapsibleState.None),
                 new NvidiaMonitorTreeItem(`Memory: ${this.currentData.memoryUsage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
                 new NvidiaMonitorTreeItem(`Temp: ${this.currentData.temperature || 'N/A'}`, vscode.TreeItemCollapsibleState.None)
             ];
@@ -60,8 +60,8 @@ class NvidiaMonitorTreeDataProvider {
             ramCommand = 'wmic OS get FreePhysicalMemory , TotalVisibleMemorySize /value';
         } else if (platform === 'linux') {
             nvidiaCommand = 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits';
-            cpuCommand = 'mpstat | grep "all" | awk \'{print 100 - $12}\'';
-            ramCommand = 'free -m | grep Mem | awk \'{print $3 "MB / " $2 "MB"}\'';
+            cpuCommand = 'top -bn1 | grep "Cpu(s)" | awk \'{print $2 + $4}\'';
+            ramCommand = 'cat /proc/meminfo | grep -E \'MemTotal|MemFree\'';
         } else {
             console.error('Unsupported OS');
             return;
@@ -91,22 +91,39 @@ class NvidiaMonitorTreeDataProvider {
             }
 
             exec(cpuCommand, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Error executing CPU command: ${stderr}`);
-                    this.currentData.cpuUsage = 'Error';
-                } else {
-                    this.currentData.cpuUsage = `${stdout.trim().split('=')[1]}`;
+                if(platform === 'win32'){
+                    if (error) {
+                        console.error(`Error executing CPU command: ${stderr}`);
+                        this.currentData.cpuUsage = 'Error';
+                    } else {
+                        this.currentData.cpuUsage = `${stdout.trim().split('=')[1]}`;
+                    }
+                }
+                else{
+                    this.currentData.cpuUsage = stdout.trim();
                 }
 
             exec(ramCommand, (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Error executing RAM command: ${stderr}`);
-                    this.currentData.ramUsage = 'Error';
-                } else {
-                    var x=stdout.trim().split('\n');
-                    var free=x[0].split('=')[1];
-                    var total=x[1].split('=')[1]
-                    this.currentData.ramUsage = `${((total-free)/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
+                if(platform === 'win32'){
+                    if (error) {
+                        console.error(`Error executing RAM command: ${stderr}`);
+                        this.currentData.ramUsage = 'Error';
+                    } else {
+                        var x=stdout.trim().split('\n');
+                        var free=x[0].split('=')[1];
+                        var total=x[1].split('=')[1]
+                        this.currentData.ramUsage = `${((total-free)/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
+                    }
+                }else{
+                    if (error) {
+                        console.error(`Error executing RAM command: ${stderr}`);
+                        this.currentData.ramUsage = 'Error';
+                    } else {
+                        var x=stdout.trim().split('\n');
+                        var total=x[0].split(':')[1].split("kB")[0];
+                        var free=x[1].split(':')[1].split("kB")[0];
+                        this.currentData.ramUsage = `${((total-free)/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
+                    }
                 }
                 this._onDidChangeTreeData.fire(); // อัปเดต tree view
                 });
