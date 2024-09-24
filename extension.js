@@ -4,7 +4,7 @@ const { exec } = require('child_process');
 class NvidiaMonitorTreeItem extends vscode.TreeItem {
     constructor(label, collapsibleState) {
         super(label, collapsibleState);
-        this.contextValue = 'nvidiaMonitorItem'; // ใช้เพื่อจัดการ context
+        this.contextValue = 'nvidiaMonitorItem';
     }
 }
 
@@ -12,7 +12,7 @@ class NvidiaMonitorTreeDataProvider {
     constructor() {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-        this.currentData = {}; // เก็บข้อมูลที่อัปเดต
+        this.currentData = {};
     }
 
     getTreeItem(element) {
@@ -22,22 +22,24 @@ class NvidiaMonitorTreeDataProvider {
     getChildren(element) {
         if (!element) {
             const currentTime = this.getCurrentTime();
-            const rootItem = new NvidiaMonitorTreeItem(` ${this.currentData.device || 'N/A'}`, vscode.TreeItemCollapsibleState.Collapsed);
-            return [rootItem];
-        } else if (element.label.startsWith(' ')) {
-            const gpuUsageItem = [
-                new NvidiaMonitorTreeItem(`Memory Usage: ${this.currentData.memoryUsage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
-                new NvidiaMonitorTreeItem(`Usage: ${this.currentData.usage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
-                new NvidiaMonitorTreeItem(`Temperature: ${this.currentData.temperature || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
-                new NvidiaMonitorTreeItem(`view`, vscode.TreeItemCollapsibleState.Collapsed)
-            ]
-            return gpuUsageItem;
-        } else if (element.label == 'view') {
-            const childItems = [
-                new NvidiaMonitorTreeItem(`Device: ${this.currentData.device || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
+            const rootItem = [
+                new NvidiaMonitorTreeItem(`${this.currentData.device || 'N/A'}`, vscode.TreeItemCollapsibleState.Collapsed),
+                new NvidiaMonitorTreeItem(`CPU`, vscode.TreeItemCollapsibleState.Collapsed),
             ];
-            return childItems;
-        }
+            return rootItem;
+        }  else if (element.label.startsWith(`${this.currentData.device || 'N/A'}`)) {
+            return [
+                new NvidiaMonitorTreeItem(`Usage: ${this.currentData.usage || 'N/A'} %`, vscode.TreeItemCollapsibleState.None),
+                new NvidiaMonitorTreeItem(`Memory: ${this.currentData.memoryUsage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
+                new NvidiaMonitorTreeItem(`Temp: ${this.currentData.temperature || 'N/A'}`, vscode.TreeItemCollapsibleState.None)
+            ];
+        } 
+        else if (element.label.startsWith(`CPU`)) {
+            return [
+                new NvidiaMonitorTreeItem(`CPU: ${this.currentData.cpuUsage || 'N/A'} %`, vscode.TreeItemCollapsibleState.None),
+                new NvidiaMonitorTreeItem(`RAM: ${this.currentData.ramUsage || 'N/A'} GB`, vscode.TreeItemCollapsibleState.None),
+            ];
+        } 
         return [];
     }
 
@@ -49,41 +51,71 @@ class NvidiaMonitorTreeDataProvider {
     }
 
     updateData() {
-        // รันคำสั่ง nvidia-smi
-        exec('nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits', (error, stdout, stderr) => {
+        const platform = process.platform;
+        let nvidiaCommand, cpuCommand, ramCommand;
+
+        if (platform === 'win32') {
+            nvidiaCommand = 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits';
+            cpuCommand = 'wmic cpu get loadpercentage /value';
+            ramCommand = 'wmic OS get FreePhysicalMemory , TotalVisibleMemorySize /value';
+        } else if (platform === 'linux') {
+            nvidiaCommand = 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits';
+            cpuCommand = 'mpstat | grep "all" | awk \'{print 100 - $12}\'';
+            ramCommand = 'free -m | grep Mem | awk \'{print $3 "MB / " $2 "MB"}\'';
+        } else {
+            console.error('Unsupported OS');
+            return;
+        }
+
+        exec(nvidiaCommand, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error executing nvidia-smi: ${stderr}`);
-                this.currentData = {
-                    device: 'Error',
-                    usage: 'Error',
-                    memoryUsage: 'Error',
-                    temperature: 'Error'
-                };
+                this.currentData.device = 'Error';
+                this.currentData.usage = 'Error';
+                this.currentData.memoryUsage = 'Error';
+                this.currentData.temperature = 'Error';
             } else {
                 const lines = stdout.trim().split('\n');
                 if (lines.length > 0) {
                     const [device, usage, memoryUsed, memoryTotal, temperature] = lines[0].split(', ');
-                    this.currentData = {
-                        device: `${device}`, // แสดงชื่ออุปกรณ์
-                        usage: `${usage}%`, // แสดงหน่วย %
-                        memoryUsage: `${memoryUsed} / ${memoryTotal}GB`, // แสดงหน่วย GB
-                        temperature: `${temperature}°C` // แสดงหน่วย °C
-                    };
+                    this.currentData.device = `${device}`;
+                    this.currentData.usage = `${usage}`;
+                    this.currentData.memoryUsage = `${(memoryUsed/ 1024).toFixed(2)} / ${(memoryTotal/ 1024).toFixed(2)}GB`;
+                    this.currentData.temperature = `${temperature}°C`;
                 } else {
-                    this.currentData = {
-                        device: 'N/A',
-                        usage: 'N/A',
-                        memoryUsage: 'N/A',
-                        temperature: 'N/A'
-                    };
+                    this.currentData.device = 'N/A';
+                    this.currentData.usage = 'N/A';
+                    this.currentData.memoryUsage = 'N/A';
+                    this.currentData.temperature = 'N/A';
                 }
             }
-            this._onDidChangeTreeData.fire(); // อัปเดต tree view
+
+            exec(cpuCommand, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error executing CPU command: ${stderr}`);
+                    this.currentData.cpuUsage = 'Error';
+                } else {
+                    this.currentData.cpuUsage = `${stdout.trim().split('=')[1]}`;
+                }
+
+            exec(ramCommand, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error executing RAM command: ${stderr}`);
+                    this.currentData.ramUsage = 'Error';
+                } else {
+                    var x=stdout.trim().split('\n');
+                    var free=x[0].split('=')[1];
+                    var total=x[1].split('=')[1]
+                    this.currentData.ramUsage = `${((total-free)/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
+                }
+                this._onDidChangeTreeData.fire(); // อัปเดต tree view
+                });
+            });
         });
     }
 
     refresh() {
-        this.updateData(); // เรียกใช้เพื่ออัปเดตข้อมูล
+        this.updateData();
     }
 }
 
@@ -103,7 +135,7 @@ function activate(context) {
     const interval = setInterval(() => {
         nvidiaMonitorTreeDataProvider.refresh();
         console.log('NVIDIA Monitor data auto-refreshed');
-    }, 500); // 5000 มิลลิวินาที = 5 วินาที
+    }, 500);
 
     context.subscriptions.push(refreshCommand);
     context.subscriptions.push({
