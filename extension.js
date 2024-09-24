@@ -22,17 +22,17 @@ class NvidiaMonitorTreeDataProvider {
     getChildren(element) {
         if (!element) {
             const currentTime = this.getCurrentTime();
-            const rootItem = new NvidiaMonitorTreeItem(`${this.currentData.device || 'N/A'}`, vscode.TreeItemCollapsibleState.Collapsed);
+            const rootItem = new NvidiaMonitorTreeItem(` ${this.currentData.device || 'N/A'}`, vscode.TreeItemCollapsibleState.Collapsed);
             return [rootItem];
-        } else if (element.label.startsWith('')) {
+        } else if (element.label.startsWith(' ')) {
             const gpuUsageItem = [
                 new NvidiaMonitorTreeItem(`Memory Usage: ${this.currentData.memoryUsage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
                 new NvidiaMonitorTreeItem(`Usage: ${this.currentData.usage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
                 new NvidiaMonitorTreeItem(`Temperature: ${this.currentData.temperature || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
-                new NvidiaMonitorTreeItem(`view ${this.currentData.temperature || 'N/A'}`, vscode.TreeItemCollapsibleState.Collapsed)
+                new NvidiaMonitorTreeItem(`view`, vscode.TreeItemCollapsibleState.Collapsed)
             ]
             return gpuUsageItem;
-        } else if (element.label.startsWith('view')) {
+        } else if (element.label == 'view') {
             const childItems = [
                 new NvidiaMonitorTreeItem(`Device: ${this.currentData.device || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
             ];
