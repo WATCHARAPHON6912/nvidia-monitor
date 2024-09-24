@@ -1,8 +1,11 @@
 {
-  "name": "nvidia-monitor",
+  
+  "name": "nvidia-monitor-cpu",
+  "publisher": "nvidia-monitor",
   "displayName": "nvidia-monitor",
   "description": "NVIDIA Monitor Extension for VSCode.",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "icon": "logo.png",
   "engines": {
     "vscode": "^1.93.0"
   },
