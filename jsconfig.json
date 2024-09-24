@@ -1,0 +1,49 @@
+{
+  "name": "nvidia-monitor",
+  "displayName": "nvidia-monitor",
+  "description": "NVIDIA Monitor Extension for VSCode.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:nvidiaMonitorView"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nvidia-monitor.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "nvidia-monitor.refresh",
+        "title": "Refresh NVIDIA Monitor"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "nvidiaMonitorView",
+          "name": "NVIDIA Monitor"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.93.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "20.x",
+    "eslint": "^9.9.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
