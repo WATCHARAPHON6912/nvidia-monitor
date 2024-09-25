@@ -122,7 +122,7 @@ class NvidiaMonitorTreeDataProvider {
                         var x=stdout.trim().split('\n');
                         var total=x[0];
                         var used=x[1];
-                        this.currentData.ramUsage = `${(used/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
+                        this.currentData.ramUsage = `${(used/ (1024)).toFixed(2)}/${(total/ (1024)).toFixed(2)}`;
                     }
                 }
                 this._onDidChangeTreeData.fire(); // อัปเดต tree view
