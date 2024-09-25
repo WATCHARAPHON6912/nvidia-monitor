@@ -61,7 +61,7 @@ class NvidiaMonitorTreeDataProvider {
         } else if (platform === 'linux') {
             nvidiaCommand = 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits';
             cpuCommand = 'top -bn1 | grep "Cpu(s)" | awk \'{print $2 + $4}\'';
-            ramCommand = 'cat /proc/meminfo | grep -E \'MemTotal|MemFree\'';
+            ramCommand = "free -m | awk '/Mem:/ {printf \"%.1f \\n%.1f \\n\", $2, $3}'";
         } else {
             console.error('Unsupported OS');
             return;
@@ -120,9 +120,9 @@ class NvidiaMonitorTreeDataProvider {
                         this.currentData.ramUsage = 'Error';
                     } else {
                         var x=stdout.trim().split('\n');
-                        var total=x[0].split(':')[1].split("kB")[0];
-                        var free=x[1].split(':')[1].split("kB")[0];
-                        this.currentData.ramUsage = `${((total-free)/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
+                        var total=x[0];
+                        var used=x[1];
+                        this.currentData.ramUsage = `${(used/ (1024 * 1024)).toFixed(2)}/${(total/ (1024 * 1024)).toFixed(2)}`;
                     }
                 }
                 this._onDidChangeTreeData.fire(); // อัปเดต tree view
