@@ -61,7 +61,7 @@ class NvidiaMonitorTreeDataProvider {
         } else if (platform === 'linux') {
             nvidiaCommand = 'nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits';
             cpuCommand = 'top -bn1 | grep "Cpu(s)" | awk \'{print $2 + $4}\'';
-            ramCommand = "LC_ALL=C free -m | awk '/Mem:/ {printf \"%.1f \\n%.1f \\n\", $2, $3}'";
+            ramCommand = "LC_ALL=C free -m | awk '/Mem:/ {printf \"%.1f \\n%.1f \\n\", $2, $3}'"; 
         } else {
             console.error('Unsupported OS');
             return;
