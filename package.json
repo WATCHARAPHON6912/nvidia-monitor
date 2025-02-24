@@ -3,7 +3,7 @@
   "publisher": "nvidia-monitor",
   "displayName": "nvidia-monitor",
   "description": "NVIDIA Monitor Extension for VSCode.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "icon": "logo.png",
   "repository": {
     "type": "git",
