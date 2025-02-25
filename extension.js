@@ -38,8 +38,8 @@ class NvidiaMonitorTreeDataProvider {
             if (element.label.startsWith(`GPU${String(i)} : ${this.currentData.gpu[i].device || 'N/A'}`)) {
                 return [
                     new NvidiaMonitorTreeItem(`GPU: ${this.currentData.gpu[i].gpuUsage || 'N/A'} %`, vscode.TreeItemCollapsibleState.None),
-                    new NvidiaMonitorTreeItem(`Memory: ${this.currentData.gpu[i].memoryUsage || 'N/A'}`, vscode.TreeItemCollapsibleState.None),
-                    new NvidiaMonitorTreeItem(`Temp: ${this.currentData.gpu[i].temperature || 'N/A'}`, vscode.TreeItemCollapsibleState.None)
+                    new NvidiaMonitorTreeItem(`Memory: ${this.currentData.gpu[i].memoryUsage || 'N/A'} GB`, vscode.TreeItemCollapsibleState.None),
+                    new NvidiaMonitorTreeItem(`Temp: ${this.currentData.gpu[i].temperature || 'N/A'} °C`, vscode.TreeItemCollapsibleState.None)
                 ];
             }
         }
