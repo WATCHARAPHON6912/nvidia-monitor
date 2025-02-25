@@ -1,2 +1,4 @@
 # nvidia-monitor
-![NVIDIA Monitor](show.png)
+![NVIDIA Monitor](show1.png)
+
+![NVIDIA Monitor](show2.png)
